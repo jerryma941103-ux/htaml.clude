@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二连板回调选股评分系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin></script>
+    <style>body { margin: 0; padding: 0; background-color: #0A0E1A; }</style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+
+        const data = [
+          {
+            category: "🔥 二连板质量", color: "#FF6B35",
+            items: [
+              { id:"c1", label:"首板缩量或平量涨停", max:8 },
+              { id:"c2", label:"二板14:00前封板", max:8 },
+              { id:"c3", label:"有明确题材驱动", max:8 },
+              { id:"c4", label:"龙虎榜有知名游资", max:6 },
+            ]
+          },
+          {
+            category: "📉 回调整理质量", color: "#4ECDC4",
+            items: [
+              { id:"r1", label:"回调幅度15%~25%之间", max:8 },
+              { id:"r2", label:"股价在均线支撑附近", max:8 },
+              { id:"r3", label:"成交量萎缩至涨停日30%以下", max:7 },
+            ]
+          },
+          {
+            category: "📊 下影线形态", color: "#FFE66D",
+            items: [
+              { id:"s1", label:"下影线 ≥ 当日振幅50%", max:12 },
+              { id:"s2", label:"低点假破前日低点后收回", max:12 },
+              { id:"s3", label:"尾盘缩量企稳或放量拉回", max:8 },
+            ]
+          },
+          {
+            category: "🌐 大盘与板块", color: "#A8E6CF",
+            items: [
+              { id:"m1", label:"大盘均线多头或横盘整理", max:8 },
+              { id:"m2", label:"同板块有强势股共振", max:7 },
+            ]
+          },
+        ];
+
+        const TOTAL_MAX = 100;
+
+        function getRating(score) {
+          if (score >= 85) return { label:"强烈推荐", color:"#00FF87", emoji:"🚀" };
+          if (score >= 70) return { label:"推荐关注", color:"#FFE66D", emoji:"👀" };
+          if (score >= 55) return { label:"谨慎观望", color:"#FF9F43", emoji:"⚠️" };
+          if (score > 0)   return { label:"放弃此标的", color:"#FF6B6B", emoji:"❌" };
+          return { label:"请开始评分", color:"#8A8070", emoji:"—" };
+        }
+
+        function App() {
+          const [scores, setScores] = useState({});
+          const [stock, setStock] = useState("");
+
+          const set = (id, val) => setScores(p => ({ ...p, [id]: Number(val) }));
+          const total = data.reduce((s,c) => s + c.items.reduce((a,i) => a+(scores[i.id]||0),0), 0);
+          const rating = getRating(total);
+
+          return (
+            <div style={{ background:"#0A0E1A", minHeight:"100vh", color:"#E8E0D0",
+              fontFamily:"-apple-system,'PingFang SC',sans-serif", padding:"18px 12px 40px", maxWidth:"600px", margin:"0 auto" }}>
+
+              <div style={{ textAlign:"center", marginBottom:20 }}>
+                <div style={{ fontSize:9, letterSpacing:5, color:"#FF6B35", fontFamily:"monospace", marginBottom:6 }}>
+                  STOCK SCORING SYSTEM
+                </div>
+                <div style={{ fontSize:20, fontWeight:800,
+                  background:"linear-gradient(135deg,#FF6B35,#FFE66D,#4ECDC4)",
+                  WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+                  二连板回调选股评分
+                </div>
+                <div style={{ fontSize:11, color:"#8A8070", marginTop:4, fontFamily:"monospace" }}>
+                  沪深主板 · 非ST · 满分{TOTAL_MAX}分
+                </div>
+              </div>
+
+              <div style={{ background:"#141824", border:"1px solid #2A2E3E", borderRadius:10,
+                padding:"10px 14px", marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:12, color:"#8A8070" }}>标的</span>
+                <input value={stock} onChange={e=>setStock(e.target.value)}
+                  placeholder="输入股票名称或代码..."
+                  style={{ background:"transparent", border:"none", outline:"none",
+                    color:"#E8E0D0", fontSize:14, fontFamily:"inherit", flex:1 }} />
+              </div>
+
+              {data.map(cat => {
+                const catScore = cat.items.reduce((s,i)=>s+(scores[i.id]||0),0);
+                const catMax = cat.items.reduce((s,i)=>s+i.max,0);
+                return (
+                  <div key={cat.category} style={{ background:"#141824", borderRadius:12,
+                    border:`1px solid ${cat.color}22`, borderLeft:`3px solid ${cat.color}`,
+                    padding:"14px 12px", marginBottom:12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
+                      <span style={{ fontWeight:700, fontSize:14, color:cat.color }}>{cat.category}</span>
+                      <span style={{ fontSize:11, color:"#8A8070", fontFamily:"monospace" }}>{catScore}/{catMax}</span>
+                    </div>
+                    {cat.items.map(item => {
+                      const val = scores[item.id] || 0;
+                      return (
+                        <div key={item.id} style={{ marginBottom:12 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+                            <span style={{ fontSize:12, color:"#C8C0B0", flex:1, lineHeight:1.4 }}>{item.label}</span>
+                            <span style={{ fontSize:11, color:cat.color, fontFamily:"monospace", marginLeft:6 }}>
+                              {val}/{item.max}
+                            </span>
+                          </div>
+                          <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                            {Array.from({length:item.max+1},(_,i)=>(
+                              <button key={i} onClick={()=>set(item.id,i)}
+                                style={{
+                                  width:28, height:28, borderRadius:6, border:"none",
+                                  background: i===val ? cat.color : (i<val ? cat.color+"44" : "#2A2E3E"),
+                                  color: i===val ? "#0A0E1A" : (i<val ? cat.color : "#4A4A5A"),
+                                  fontSize:11, fontWeight: i===val?700:400,
+                                  cursor:"pointer", fontFamily:"monospace", transition:"all 0.15s",
+                                }}>
+                                {i}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+
+              <div style={{ background:"#141824", border:`1px solid ${rating.color}44`,
+                borderRadius:14, padding:"22px 14px", textAlign:"center", marginBottom:14,
+                boxShadow:`0 0 20px ${rating.color}11` }}>
+                {stock && <div style={{ fontSize:13, color:"#8A8070", fontFamily:"monospace", marginBottom:4 }}>{stock}</div>}
+                <div style={{ fontSize:68, fontWeight:900, color:rating.color, fontFamily:"monospace", lineHeight:1 }}>
+                  {total}
+                </div>
+                <div style={{ fontSize:12, color:"#8A8070", fontFamily:"monospace", marginBottom:12 }}>/ {TOTAL_MAX}</div>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6,
+                  background:`${rating.color}18`, border:`1px solid ${rating.color}44`,
+                  borderRadius:999, padding:"7px 18px", fontSize:14, fontWeight:700, color:rating.color }}>
+                  {rating.emoji} {rating.label}
+                </div>
+                <div style={{ marginTop:14, height:4, background:"#2A2E3E", borderRadius:2 }}>
+                  <div style={{ height:"100%", width:`${total}%`,
+                    background:`linear-gradient(90deg,#FF6B35,${rating.color})`,
+                    borderRadius:2, transition:"width 0.3s" }} />
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:4,
+                  fontSize:9, color:"#4A4040", fontFamily:"monospace" }}>
+                  <span>放弃</span><span>观望</span><span>关注</span><span>强烈推荐</span>
+                </div>
+              </div>
+
+              <button onClick={()=>{ setScores({}); setStock(""); }}
+                style={{ width:"100%", padding:12, background:"transparent",
+                  border:"1px solid #3A3040", borderRadius:10, color:"#8A8070",
+                  fontSize:13, cursor:"pointer", fontFamily:"inherit", letterSpacing:2 }}>
+                重置 RESET
+              </button>
+              <div style={{ textAlign:"center", marginTop:14, fontSize:10, color:"#3A3040", fontFamily:"monospace" }}>
+                仅供参考，不构成投资建议
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
